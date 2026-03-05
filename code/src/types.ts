@@ -19,11 +19,17 @@ export interface Entity { // This is the type of the entities array in the NLUOb
   offset: number;
   length: number;
   resolutions?: Resolution[];
+  extraInformation?: ExtraInofrmation[];
 }
 
 export interface Resolution {
   resolutionKind: string;
   value: boolean;
+}
+
+export interface ExtraInofrmation {
+  extraInformationKind: string;
+  key: string;
 }
 
 export interface Intent { // This is the type of the intents array in the NLUObject.

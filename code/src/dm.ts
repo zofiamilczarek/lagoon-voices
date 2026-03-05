@@ -3,7 +3,7 @@ import type { Settings } from "speechstate";
 import { speechstate } from "speechstate";
 import { createBrowserInspector } from "@statelyai/inspect";
 import { KEY, NLU_KEY } from "./azure";
-import { GUIDE_PROMPT, INTRO, GUIDE_FIRST_UTT } from "./prompts";
+import { GUIDE_PROMPT, INTRO, GUIDE_FIRST_UTT, CLAM_FIRST_UTT, CLAM_PROMPT } from "./prompts";
 import type { DMContext, DMEvents } from "./types";
 import OpenAI from "openai";
 
@@ -18,8 +18,8 @@ const azureCredentials = {
 const azureLanguageCredentials = {
   endpoint: "https://lab-gusmilczo.cognitiveservices.azure.com/language/:analyze-conversations?api-version=2024-11-15-preview" /** your Azure CLU prediction URL */,
   key: NLU_KEY /** reference to your Azure CLU key */,
-  deploymentName: "appointment" /** your Azure CLU deployment */,
-  projectName: "lab5" /** your Azure CLU project name */,
+  deploymentName: "lagoon" /** your Azure CLU deployment */,
+  projectName: "lagoon" /** your Azure CLU project name */,
 };
 
 const settings: Settings = {
@@ -77,7 +77,10 @@ const dmMachine = setup({
   guards:{
     isYes: ({context}) => context.interpretation?.entities?.find(e => e.resolutions?.[0].resolutionKind === "BooleanResolution")?.resolutions?.[0].value ?? false,
     isNo: ({context}) => !(context.interpretation?.entities?.find(e => e.resolutions?.[0].resolutionKind === "BooleanResolution")?.resolutions?.[0].value ?? true),
-    isEndConversation: () => false,
+    isEndConversation: ({context}) => context.interpretation?.topIntent === "EndConversation",
+    isCharacter: ({context}, params: { name: string }) => {
+      return (context.interpretation?.topIntent === "ChooseCharacter") && (context.interpretation?.entities?.find(e=>e.extraInformation?.[0].extraInformationKind === "ListKey")?.extraInformation?.[0].key === params.name);
+    },
   },
   actors: {
     getLLMAnswerActor: fromPromise(
@@ -92,7 +95,7 @@ const dmMachine = setup({
     lastResult: null,
     interpretation: null,
     guideHistory: [{"role":  "assistant", "content": GUIDE_FIRST_UTT}],
-    clamHistory: null,
+    clamHistory: [{"role": "assistant", "content": CLAM_FIRST_UTT}],
   }),
   id: "DM",
   initial: "Prepare",
@@ -128,10 +131,13 @@ const dmMachine = setup({
           initial: "FirstUtterance",
           on: {
             LISTEN_COMPLETE: [
-              // {
-              //   target: "Clam",
-              //   guard: entity is clam,
-              // },
+              {
+                target: "Clam",
+                guard: {
+                  type: "isCharacter",
+                  params: () => ({name: "Adriatic Clam"})
+                },
+              },
               {
                 target: "#DM.Done",
                 guard: "isEndConversation",
@@ -154,6 +160,75 @@ const dmMachine = setup({
                   input: ({ context }) => ({
                     dialogue: context.guideHistory,
                     prompt: GUIDE_PROMPT
+                  }),
+                  onDone: {
+                    actions: [
+                      {
+                        type: "spst.speak",
+                        params: ({ event }) => ({
+                          utterance: event.output
+                        })
+                      },
+                      assign(({ context, event }) => {
+                        return {guideHistory: (context.guideHistory ?? []).concat([{"role": "assistant", "content": event.output}])};
+                      }),
+                    ],
+                    target: "SpeakPrompt"
+                  }
+              }
+            },
+            SpeakPrompt: {
+              entry: {
+                type: "spst.speak",
+                params: ({context}) => ({utterance: context.guideHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
+              },
+              on: {
+                SPEAK_COMPLETE: "Ask"
+              }
+            },
+            Ask: {
+              entry: { type: "spst.listen" },
+              on: {
+                RECOGNISED: {
+                  actions: assign(({ context, event }) => {
+                    return { lastResult: event.value, interpretation: event.nluValue, guideHistory: (context.guideHistory ?? []).concat([{"role": "user", "content": event.value?.[0].utterance}]) };
+                  }),
+                },
+                ASR_NOINPUT: {
+                  actions: assign({ lastResult: null }),
+                  invoke: "#DM.NoInput"
+                },
+              },
+            },
+          },
+        },
+        Clam: {
+          initial: "FirstUtterance",
+          on: {
+            LISTEN_COMPLETE: [
+              {
+                target: "Guide",
+                // actions: assign(({context}) => ({})), // add statement to the userprompt that will say that the user talked to the Clam.
+                guard: "isEndConversation",
+              },
+              {
+                target: ".Prompt",
+                guard: ({ context }) => !!context.lastResult,
+              },
+              { target: "#DM.NoInput" },
+            ],
+          },
+          states: {
+            FirstUtterance: {
+              entry: {type: "spst.speak", params: {utterance: CLAM_FIRST_UTT}},
+              on: {SPEAK_COMPLETE: "Ask"}
+            },
+            Prompt: {
+                invoke: {
+                  src: "getLLMAnswerActor",
+                  input: ({ context }) => ({
+                    dialogue: context.guideHistory,
+                    prompt: CLAM_PROMPT,
                   }),
                   onDone: {
                     actions: [
