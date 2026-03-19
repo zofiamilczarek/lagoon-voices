@@ -20,6 +20,10 @@ body {
   align-items: center;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .screen.light-bg {
   background: var(--Color);
 }
