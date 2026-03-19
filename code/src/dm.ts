@@ -373,16 +373,16 @@ dmActor.subscribe((state) => {
   console.groupEnd();
 });
 
-export function setupButton(element: HTMLButtonElement) {
+export function setupStartButton(element: HTMLButtonElement) {
   element.addEventListener("click", () => {
     dmActor.send({ type: "CLICK" });
   });
-  dmActor.subscribe((snapshot) => {
-    const meta: { view?: string } = Object.values(
-      snapshot.context.spstRef.getSnapshot().getMeta(),
-    )[0] || {
-      view: undefined,
-    };
-    element.innerHTML = `${meta.view}`;
-  });
+  // dmActor.subscribe((snapshot) => {
+  //   const meta: { view?: string } = Object.values(
+  //     snapshot.context.spstRef.getSnapshot().getMeta(),
+  //   )[0] || {
+  //     view: undefined,
+  //   };
+  //   element.innerHTML = `${meta.view}`;
+  // });
 }
