@@ -7,7 +7,7 @@ export interface DMContext {
   lastResult: Hypothesis[] | null;
   interpretation: NLUObject | null;
   guideHistory: OpenAI.Chat.Completions.ChatCompletionMessageParam[] | null,
-  clamHistory: OpenAI.Chat.Completions.ChatCompletionMessageParam[] | null,
+  crabHistory: OpenAI.Chat.Completions.ChatCompletionMessageParam[] | null,
 }
 
 export type DMEvents = SpeechStateExternalEvent | { type: "CLICK" } | { type: "DONE" };

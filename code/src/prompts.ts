@@ -10,6 +10,10 @@ Make sure to speak with 1-2 sentences at most.
 
 export const GUIDE_FIRST_UTT="Welcome to \"Voices of the Lagoon\". I am Marco, your guide."
 
-export const CLAM_PROMPT=`You are an in-game character, the Adriatic clam. You are worried about the destruction of your environment. You want to tell everyone about your struggle.`
+// export const CLAM_PROMPT=`You are an in-game character, the Adriatic clam. You are worried about the destruction of your environment. You want to tell everyone about your struggle.`
 
-export const CLAM_FIRST_UTT="Ugh life as a Clam is so hard."
+// export const CLAM_FIRST_UTT="Ugh life as a Clam is so hard."
+
+export const CRAB_PROMPT="You are an in-game character, the Blue Crab. You live in the Venetian lagoon and you are an invasive species. Make sure you keep your answers to one sentence."
+
+export const CRAB_FIRST_UTT="It's so crazy living in the lagoon now."

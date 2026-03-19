@@ -3,7 +3,7 @@ import type { Settings } from "speechstate";
 import { speechstate } from "speechstate";
 import { createBrowserInspector } from "@statelyai/inspect";
 import { KEY, NLU_KEY } from "./azure";
-import { GUIDE_PROMPT, INTRO, GUIDE_FIRST_UTT, CLAM_FIRST_UTT, CLAM_PROMPT } from "./prompts";
+import { GUIDE_PROMPT, INTRO, GUIDE_FIRST_UTT, CRAB_FIRST_UTT, CRAB_PROMPT } from "./prompts";
 import type { DMContext, DMEvents } from "./types";
 import OpenAI from "openai";
 
@@ -95,7 +95,7 @@ const dmMachine = setup({
     lastResult: null,
     interpretation: null,
     guideHistory: [{"role":  "assistant", "content": GUIDE_FIRST_UTT}],
-    clamHistory: [{"role": "assistant", "content": CLAM_FIRST_UTT}],
+    crabHistory: [{"role": "assistant", "content": CRAB_FIRST_UTT}],
   }),
   id: "DM",
   initial: "Prepare",
@@ -132,10 +132,17 @@ const dmMachine = setup({
           on: {
             LISTEN_COMPLETE: [
               {
-                target: "Clam",
+                target: "Crab",
                 guard: {
                   type: "isCharacter",
-                  params: () => ({name: "Adriatic Clam"})
+                  params: () => ({name: "Blue Crab"})
+                },
+              },
+              {
+                target: "Fisherman",
+                guard: {
+                  type: "isCharacter",
+                  params: () => ({name: "Fisherman"})
                 },
               },
               {
@@ -202,13 +209,15 @@ const dmMachine = setup({
             },
           },
         },
-        Clam: {
+        Crab: {
           initial: "FirstUtterance",
           on: {
             LISTEN_COMPLETE: [
               {
                 target: "Guide",
-                // actions: assign(({context}) => ({})), // add statement to the userprompt that will say that the user talked to the Clam.
+                actions: assign(({ context }) => {
+                        return {crabHistory: (context.crabHistory ?? []).concat([{"role": "assistant", "content": "So how did talking to the Crab go?"}])};
+                      }),
                 guard: "isEndConversation",
               },
               {
@@ -220,15 +229,15 @@ const dmMachine = setup({
           },
           states: {
             FirstUtterance: {
-              entry: {type: "spst.speak", params: {utterance: CLAM_FIRST_UTT}},
+              entry: {type: "spst.speak", params: {utterance: CRAB_FIRST_UTT}},
               on: {SPEAK_COMPLETE: "Ask"}
             },
             Prompt: {
                 invoke: {
                   src: "getLLMAnswerActor",
                   input: ({ context }) => ({
-                    dialogue: context.guideHistory,
-                    prompt: CLAM_PROMPT,
+                    dialogue: context.crabHistory,
+                    prompt: CRAB_PROMPT,
                   }),
                   onDone: {
                     actions: [
@@ -239,7 +248,7 @@ const dmMachine = setup({
                         })
                       },
                       assign(({ context, event }) => {
-                        return {guideHistory: (context.guideHistory ?? []).concat([{"role": "assistant", "content": event.output}])};
+                        return {crabHistory: (context.crabHistory ?? []).concat([{"role": "assistant", "content": event.output}])};
                       }),
                     ],
                     target: "SpeakPrompt"
@@ -249,7 +258,78 @@ const dmMachine = setup({
             SpeakPrompt: {
               entry: {
                 type: "spst.speak",
-                params: ({context}) => ({utterance: context.guideHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
+                params: ({context}) => ({utterance: context.crabHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
+              },
+              on: {
+                SPEAK_COMPLETE: "Ask"
+              }
+            },
+            Ask: {
+              entry: { type: "spst.listen" },
+              on: {
+                RECOGNISED: {
+                  actions: assign(({ context, event }) => {
+                    return { lastResult: event.value, interpretation: event.nluValue, guideHistory: (context.guideHistory ?? []).concat([{"role": "user", "content": event.value?.[0].utterance}]) };
+                  }),
+                },
+                ASR_NOINPUT: {
+                  actions: assign({ lastResult: null }),
+                  invoke: "#DM.NoInput"
+                },
+              },
+            },
+          },
+        },
+        Fisherman: {
+          initial: "FirstUtterance",
+          on: {
+            LISTEN_COMPLETE: [
+              {
+                target: "Guide",
+                actions: assign(({ context }) => {
+                        return {crabHistory: (context.crabHistory ?? []).concat([{"role": "assistant", "content": "So how did talking to the Crab go?"}])};
+                      }),
+                guard: "isEndConversation",
+              },
+              {
+                target: ".Prompt",
+                guard: ({ context }) => !!context.lastResult,
+              },
+              { target: "#DM.NoInput" },
+            ],
+          },
+          states: {
+            FirstUtterance: {
+              entry: {type: "spst.speak", params: {utterance: CRAB_FIRST_UTT}},
+              on: {SPEAK_COMPLETE: "Ask"}
+            },
+            Prompt: {
+                invoke: {
+                  src: "getLLMAnswerActor",
+                  input: ({ context }) => ({
+                    dialogue: context.crabHistory,
+                    prompt: CRAB_PROMPT,
+                  }),
+                  onDone: {
+                    actions: [
+                      {
+                        type: "spst.speak",
+                        params: ({ event }) => ({
+                          utterance: event.output
+                        })
+                      },
+                      assign(({ context, event }) => {
+                        return {crabHistory: (context.crabHistory ?? []).concat([{"role": "assistant", "content": event.output}])};
+                      }),
+                    ],
+                    target: "SpeakPrompt"
+                  }
+              }
+            },
+            SpeakPrompt: {
+              entry: {
+                type: "spst.speak",
+                params: ({context}) => ({utterance: context.crabHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
               },
               on: {
                 SPEAK_COMPLETE: "Ask"
