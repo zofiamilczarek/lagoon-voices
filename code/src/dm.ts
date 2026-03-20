@@ -126,12 +126,12 @@ const dmMachine = setup({
         // The Lagoon speaking
         Intro: {
           entry: [
-            ({}) => setDivVisibility("mapOnly", false),
+            ({}) => makeHidden("mapOnly", false),
             { type: "spst.speak", params: { utterance: INTRO } }],
           on: {
             SPEAK_COMPLETE: {
               target: "Guide",
-              actions: ({}) => setDivVisibility("mapOnly", true),
+              actions: ({}) => makeHidden("mapOnly", true),
             }
           }, 
         },
@@ -142,8 +142,8 @@ const dmMachine = setup({
               {
                 target: "Crab",
                 actions: ({}) => {
-                  setDivVisibility("main", true);
-                  setDivVisibility("crab", false);
+                  makeHidden("main", true);
+                  makeHidden("crab", false);
                 },
                 guard: {
                   type: "isCharacter",
@@ -153,8 +153,8 @@ const dmMachine = setup({
               {
                 target: "Fisherman",
                 actions: ({}) => {
-                  setDivVisibility("main", true);
-                  setDivVisibility("fisherman", false);
+                  makeHidden("main", true);
+                  makeHidden("fisherman", false);
                 },
                 guard: {
                   type: "isCharacter",
@@ -175,9 +175,15 @@ const dmMachine = setup({
           states: {
             FirstUtterance: {
               entry:[ 
-                ({}) => setDivVisibility("main", false),
+                ({}) => makeHidden("main", false),
+                ({}) => setSpeaking("guide", true),
                 {type: "spst.speak", params: ({context}) => ({utterance: context.guideHistory?.at(-1)?.content as string ?? GUIDE_FIRST_UTT })}],
-              on: {SPEAK_COMPLETE: "Ask"}
+              on: {
+                SPEAK_COMPLETE: {
+                  target: "Ask",
+                  // actions: ({}) => setSpeaking("guide", false),
+                }
+              }
             },
             Prompt: {
                 invoke: {
@@ -188,12 +194,6 @@ const dmMachine = setup({
                   }),
                   onDone: {
                     actions: [
-                      {
-                        type: "spst.speak",
-                        params: ({ event }) => ({
-                          utterance: event.output
-                        })
-                      },
                       assign(({ context, event }) => {
                         return {guideHistory: (context.guideHistory ?? []).concat([{"role": "assistant", "content": event.output}])};
                       }),
@@ -203,16 +203,22 @@ const dmMachine = setup({
               }
             },
             SpeakPrompt: {
-              entry: {
-                type: "spst.speak",
-                params: ({context}) => ({utterance: context.guideHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
-              },
+              entry:[ 
+                ({}) => setSpeaking("guide", true),
+                {
+                  type: "spst.speak",
+                  params: ({context}) => ({utterance: context.guideHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
+                },
+              ],
               on: {
                 SPEAK_COMPLETE: "Ask"
               }
             },
             Ask: {
-              entry: { type: "spst.listen" },
+              entry: [
+                ({}) => setSpeaking("guide", false),
+                { type: "spst.listen" }
+              ],
               on: {
                 RECOGNISED: {
                   actions: assign(({ context, event }) => {
@@ -233,9 +239,12 @@ const dmMachine = setup({
             LISTEN_COMPLETE: [
               {
                 target: "Guide",
-                actions: assign(({ context }) => {
-                        return {crabHistory: (context.crabHistory ?? []).concat([{"role": "assistant", "content": "So how did talking to the Crab go?"}])};
-                      }),
+                actions: [
+                    assign(({ context }) => {
+                        return {guideHistory: (context.guideHistory ?? []).concat([{"role": "assistant", "content": "So how did talking to the Crab go?"}])};
+                    }),
+                    ({}) => makeHidden("crab", true),
+                  ],
                 guard: "isEndConversation",
               },
               {
@@ -247,7 +256,10 @@ const dmMachine = setup({
           },
           states: {
             FirstUtterance: {
-              entry: {type: "spst.speak", params: {utterance: CRAB_FIRST_UTT}},
+              entry: [
+                ({}) => setSpeaking("crab", true),
+                {type: "spst.speak", params: {utterance: CRAB_FIRST_UTT}},
+              ],
               on: {SPEAK_COMPLETE: "Ask"}
             },
             Prompt: {
@@ -259,12 +271,6 @@ const dmMachine = setup({
                   }),
                   onDone: {
                     actions: [
-                      {
-                        type: "spst.speak",
-                        params: ({ event }) => ({
-                          utterance: event.output
-                        })
-                      },
                       assign(({ context, event }) => {
                         return {crabHistory: (context.crabHistory ?? []).concat([{"role": "assistant", "content": event.output}])};
                       }),
@@ -274,16 +280,22 @@ const dmMachine = setup({
               }
             },
             SpeakPrompt: {
-              entry: {
-                type: "spst.speak",
-                params: ({context}) => ({utterance: context.crabHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
-              },
+              entry: [
+                ({}) => setSpeaking("crab", true),
+                {
+                  type: "spst.speak",
+                  params: ({context}) => ({utterance: context.crabHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
+                },
+              ],
               on: {
                 SPEAK_COMPLETE: "Ask"
               }
             },
             Ask: {
-              entry: { type: "spst.listen" },
+              entry: [
+                ({}) => setSpeaking("crab", false),
+                { type: "spst.listen" }
+              ],
               on: {
                 RECOGNISED: {
                   actions: assign(({ context, event }) => {
@@ -304,9 +316,12 @@ const dmMachine = setup({
             LISTEN_COMPLETE: [
               {
                 target: "Guide",
-                actions: assign(({ context }) => {
-                        return {fishermanHistory: (context.fishermanHistory ?? []).concat([{"role": "assistant", "content": "So how did talking to the Fisherman go?"}])};
+                actions: [
+                  assign(({ context }) => {
+                        return {guideHistory: (context.guideHistory ?? []).concat([{"role": "assistant", "content": "So how did talking to the Fisherman go?"}])};
                       }),
+                  ({}) => makeHidden("fisherman", true),
+                ],
                 guard: "isEndConversation",
               },
               {
@@ -318,7 +333,10 @@ const dmMachine = setup({
           },
           states: {
             FirstUtterance: {
-              entry: {type: "spst.speak", params: {utterance: FISHERMAN_FIRST_UTT}},
+              entry: [
+                ({}) => setSpeaking("fisherman", true),
+                {type: "spst.speak", params: {utterance: FISHERMAN_FIRST_UTT}}
+              ],
               on: {SPEAK_COMPLETE: "Ask"}
             },
             Prompt: {
@@ -330,12 +348,6 @@ const dmMachine = setup({
                   }),
                   onDone: {
                     actions: [
-                      {
-                        type: "spst.speak",
-                        params: ({ event }) => ({
-                          utterance: event.output
-                        })
-                      },
                       assign(({ context, event }) => {
                         return {fishermanHistory: (context.fishermanHistory ?? []).concat([{"role": "assistant", "content": event.output}])};
                       }),
@@ -345,16 +357,22 @@ const dmMachine = setup({
               }
             },
             SpeakPrompt: {
-              entry: {
-                type: "spst.speak",
-                params: ({context}) => ({utterance: context.fishermanHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
-              },
+              entry: [
+                ({}) => setSpeaking("fisherman", true),
+                {
+                  type: "spst.speak",
+                  params: ({context}) => ({utterance: context.fishermanHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
+                }
+              ],
               on: {
                 SPEAK_COMPLETE: "Ask"
               }
             },
             Ask: {
-              entry: { type: "spst.listen" },
+              entry: [
+                ({}) => setSpeaking("fisherman", false),
+                { type: "spst.listen" }
+              ],
               on: {
                 RECOGNISED: {
                   actions: assign(({ context, event }) => {
@@ -393,23 +411,13 @@ dmActor.subscribe((state) => {
 
 export function setupStartButton(element: HTMLButtonElement) {
   element.addEventListener("click", () => {
-    setDivVisibility("startPage", true)
+    makeHidden("startPage", true)
     dmActor.send({ type: "CLICK" });
   });
-
-  // When clicked -> make current div 'hidden' and remove hidden from target div
-  // dmActor.subscribe((snapshot) => {
-  //   const meta: { view?: string } = Object.values(
-  //     snapshot.context.spstRef.getSnapshot().getMeta(),
-  //   )[0] || {
-  //     view: undefined,
-  //   };
-  //   element.innerHTML = `${meta.view}`;
-  // });
 }
 
 
-function setDivVisibility(divId: string, hidden: boolean) {
+function makeHidden(divId: string, hidden: boolean) {
   const element = document.getElementById(divId);
   if (!element) return;
 
@@ -417,11 +425,12 @@ function setDivVisibility(divId: string, hidden: boolean) {
 }
 
 function setSpeaking(character: string, value: boolean) {
-  const element = document.getElementById(character)
+  const element = document.getElementById(`${character}Image`) as HTMLImageElement | null;
+  if (!element) return;
+  
   if (value) {
-
-  }
-  else {
-
+    element.src = `images/${character}-animation.gif`;
+  } else {
+    element.src = `images/${character}.png`;
   }
 }
