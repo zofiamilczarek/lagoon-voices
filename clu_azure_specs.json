@@ -1,0 +1,373 @@
+{
+    "projectFileVersion": "2025-05-15-preview",
+    "stringIndexType": "Utf16CodeUnit",
+    "metadata": {
+        "projectKind": "Conversation",
+        "settings": {
+            "confidenceThreshold": 0,
+            "normalizeCasing": false,
+            "augmentDiacritics": false
+        },
+        "projectName": "lagoon",
+        "multilingual": false,
+        "description": "",
+        "language": "en-us"
+    },
+    "assets": {
+        "projectKind": "Conversation",
+        "intents": [
+            {
+                "category": "None",
+                "description": "Used when the user's input doesn't match any known intent or is out of scope."
+            },
+            {
+                "category": "ChooseCharacter"
+            },
+            {
+                "category": "EndConversation"
+            }
+        ],
+        "entities": [
+            {
+                "category": "character",
+                "compositionSetting": "combineComponents",
+                "list": {
+                    "sublists": [
+                        {
+                            "listKey": "Fisherman",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "Fisherman",
+                                        "fishing guy",
+                                        "fisherman"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "Blue Crab",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "Blue Crab",
+                                        "crab",
+                                        "blue crab"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "listKey": "Adriatic Clam",
+                            "synonyms": [
+                                {
+                                    "language": "en-us",
+                                    "values": [
+                                        "Adriatic Clam",
+                                        "clam",
+                                        "adriatic clam"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "category": "confirmation",
+                "compositionSetting": "combineComponents",
+                "prebuilts": [
+                    {
+                        "category": "Choice.Boolean"
+                    }
+                ]
+            }
+        ],
+        "utterances": [
+            {
+                "text": "That's crazy, what a life!",
+                "language": "en-us",
+                "intent": "None",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Hey I didn't know this about the lagoon, that's really cool.",
+                "language": "en-us",
+                "intent": "None",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Wow that's great",
+                "language": "en-us",
+                "intent": "None",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "This is so interesting, tell me more about your experience.",
+                "language": "en-us",
+                "intent": "None",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Can you explain th egame to me?",
+                "language": "en-us",
+                "intent": "None",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "What do I do now?",
+                "language": "en-us",
+                "intent": "None",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "I don't like this",
+                "language": "en-us",
+                "intent": "None",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Hi",
+                "language": "en-us",
+                "intent": "None",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Bye Bye",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "See you later",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Thank you for talking to me, bye",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "No thanks, bye.",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "See you!",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "I think I'll go now.",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Bye!",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Thanks, can I talk to the crab now?",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 26,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "I think I got all that I needed here!",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "Ok thanks, goodbye!",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "I think I wanna go back.",
+                "language": "en-us",
+                "intent": "EndConversation",
+                "entities": [],
+                "dataset": "Train"
+            },
+            {
+                "text": "I guess the crab.",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 12,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "I don't know maybe the fisherman?",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 23,
+                        "length": 9
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "The clam.",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 4,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "Blue crab",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 5,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "Okay, I guess I'll talk to the crab then.",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 31,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "Can I talk to the fisherman?",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 18,
+                        "length": 9
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "I think the Adriatic Clam.",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 12,
+                        "length": 13
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "I would want to talk to the fisherman.",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 28,
+                        "length": 9
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "Can I talk to the Blue Crab?",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 18,
+                        "length": 9
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "I wanna talk with the Crab.",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 22,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            },
+            {
+                "text": "I want to talk to the Clam!",
+                "language": "en-us",
+                "intent": "ChooseCharacter",
+                "entities": [
+                    {
+                        "category": "character",
+                        "offset": 22,
+                        "length": 4
+                    }
+                ],
+                "dataset": "Train"
+            }
+        ]
+    }
+}
