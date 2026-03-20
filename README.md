@@ -25,8 +25,10 @@ Make sure to install ollama for your system (https://ollama.com/download). Once 
 ollama serve llama3.1:8b
 ```
 
-This will open a chat window in your terminal. Simply close it by typing in `/bye` or with Ctrl+D.
-
+This will open a chat window in your terminal. Simply close it by typing in `/bye` or with Ctrl+D. The model will now be running in the background. If you want to stop the model from being hosted, run:
+```
+ollama stop llama3.1:8b
+```
 
 3. Azure integration
 - Keys
@@ -46,6 +48,6 @@ This will open a chat window in your terminal. Simply close it by typing in `/by
 
 4. Running the game
 
-Type `npm run` in your console and enjoy! If you want to continue the development of the game, run `npm run dev`
+Type `npm run dev` in your console and enjoy!
 
 
