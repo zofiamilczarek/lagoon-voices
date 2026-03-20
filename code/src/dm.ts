@@ -73,7 +73,6 @@ const dmMachine = setup({
             interpretation: null,
       })),
   },
-  // TODO: figure out how to actually access the boolean value
   guards:{
     isYes: ({context}) => context.interpretation?.entities?.find(e => e.resolutions?.[0].resolutionKind === "BooleanResolution")?.resolutions?.[0].value ?? false,
     isNo: ({context}) => !(context.interpretation?.entities?.find(e => e.resolutions?.[0].resolutionKind === "BooleanResolution")?.resolutions?.[0].value ?? true),
