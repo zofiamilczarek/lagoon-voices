@@ -163,6 +163,7 @@ const dmMachine = setup({
               },
               {
                 target: "#DM.Done",
+                actions: ({}) => makeHidden("main", true),
                 guard: "isEndConversation",
               },
               {
@@ -390,7 +391,10 @@ const dmMachine = setup({
       },
     },
     Done: {
-      entry: [{type: "spst.speak", params: {utterance: "Goodbye!"}}],
+      entry: [
+        ({}) => makeHidden("credits", false),
+        {type: "spst.speak", params: {utterance: "Goodbye!"}}
+      ],
       on: {
         CLICK: "Game",
       },
