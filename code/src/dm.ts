@@ -415,3 +415,13 @@ function setDivVisibility(divId: string, hidden: boolean) {
 
   element.hidden = hidden;
 }
+
+function setSpeaking(character: string, value: boolean) {
+  const element = document.getElementById(character)
+  if (value) {
+
+  }
+  else {
+
+  }
+}
