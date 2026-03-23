@@ -30,7 +30,7 @@ const settings: Settings = {
   asrDefaultCompleteTimeout: 0,
   asrDefaultNoInputTimeout: 5000,
   locale: "en-US",
-  ttsDefaultVoice: "en-US-DavisNeural",
+  ttsDefaultVoice: "en-US-Adam:DragonHDLatestNeural",
 };
 
 const speechConfig = sdk.SpeechConfig.fromSubscription(KEY, "francecentral");
@@ -82,7 +82,7 @@ function getCrabSSML(utterance: string) : string {
 function getFishermanSSML(utterance: string) : string {
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" 
          xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
-  <voice name="it-IT-Alessio:DragonHDLatestNeural">
+  <voice name="en-US-Adam:DragonHDLatestNeural">
     <mstts:express-as role="OlderAdultMale" style="disgruntled" styledegree="1.5">
         ${utterance}
     </mstts:express-as>
@@ -117,13 +117,11 @@ const dmMachine = setup({
     "azure.speakSSML": ({ self }, params: { ssml: string }) => {
       const player = new sdk.SpeakerAudioDestination();
     
-      // 1. Set up the playback completion listener BEFORE starting
       player.onAudioEnd = (sender: sdk.IPlayer) => {
         console.log("Playback finished.");
         self.send({ type: "SPEAK_COMPLETE" });
       };
 
-      // Associate the player with the config
       const audioConfig = sdk.AudioConfig.fromSpeakerOutput(player);
       const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
 
@@ -132,14 +130,12 @@ const dmMachine = setup({
         (result) => {
           if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
             console.log("Synthesis finished, waiting for audio playback to end...");
+            self.send({type: "SPEAK_START"})
           } else {
             console.error("SSML failed. Error is:", result.errorDetails);
-            // If synthesis fails, we should probably signal completion anyway to avoid a hung state
             self.send({ type: "SPEAK_COMPLETE" });
           }
 
-          // Important: Don't close the synthesizer immediately if you want to reuse it, 
-          // but the player needs to stay alive until onAudioEnd fires.
           synthesizer.close();
         },
         (err) => {
@@ -152,7 +148,7 @@ const dmMachine = setup({
   guards:{
     isYes: ({context}) => context.interpretation?.entities?.find(e => e.resolutions?.[0].resolutionKind === "BooleanResolution")?.resolutions?.[0].value ?? false,
     isNo: ({context}) => !(context.interpretation?.entities?.find(e => e.resolutions?.[0].resolutionKind === "BooleanResolution")?.resolutions?.[0].value ?? true),
-    isEndConversation: ({context}) => context.interpretation?.topIntent === "EndConversation",
+    isEndConversation: ({context}) => context.interpretation?.topIntent === "EndConversation" && ((context.interpretation?.intents.find(e => e.category === "EndConversation")?.confidenceScore ?? 0.0) > 0.9),
     isCharacter: ({context}, params: { name: string }) => {
       return (context.interpretation?.topIntent === "ChooseCharacter") && (context.interpretation?.entities?.find(e=>e.extraInformation?.[0].extraInformationKind === "ListKey")?.extraInformation?.[0].key === params.name);
     },
@@ -477,7 +473,7 @@ const dmMachine = setup({
     Done: {
       entry: [
         ({}) => makeHidden("credits", false),
-        {type: "spst.speak", params: {utterance: "Goodbye!"}}
+        {type: "spst.speak", params: {utterance: "Thank you for playing!"}}
       ],
       on: {
         CLICK: "Game",

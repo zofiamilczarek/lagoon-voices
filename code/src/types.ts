@@ -11,7 +11,7 @@ export interface DMContext {
   fishermanHistory: OpenAI.Chat.Completions.ChatCompletionMessageParam[] | null,
 }
 
-export type DMEvents = SpeechStateExternalEvent | { type: "CLICK" } | { type: "DONE" } | {type: "SSML_COMPLETE"};
+export type DMEvents = SpeechStateExternalEvent | { type: "CLICK" } | { type: "DONE" } | {type: "SPEAK_START"};
 
 export interface Entity { // This is the type of the entities array in the NLUObject. 
   category: string;
