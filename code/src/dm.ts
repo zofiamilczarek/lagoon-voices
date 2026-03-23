@@ -55,7 +55,7 @@ async function getLLMAnswer(dialogue: OpenAI.Chat.Completions.ChatCompletionMess
 
 function getGuideSSML(utterance: string) : string {
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
-  <voice name="it-IT-Isabella:DragonHDLatestNeural">
+  <voice name="en-US-Ava:DragonHDLatestNeural">
     <prosody rate="1.05" pitch="+2%">
       ${utterance}
     </prosody>
@@ -72,6 +72,19 @@ function getCrabSSML(utterance: string) : string {
       <prosody rate="0.85" pitch="-15%" contour="(0%, -5%) (100%, -20%)">
         ${utterance}
       </prosody>
+    </mstts:express-as>
+  </voice>
+</speak>`;
+}
+
+
+
+function getFishermanSSML(utterance: string) : string {
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" 
+         xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
+  <voice name="it-IT-Alessio:DragonHDLatestNeural">
+    <mstts:express-as role="OlderAdultMale" style="disgruntled" styledegree="1.5">
+        ${utterance}
     </mstts:express-as>
   </voice>
 </speak>`;
@@ -404,7 +417,10 @@ const dmMachine = setup({
             FirstUtterance: {
               entry: [
                 ({}) => setSpeaking("fisherman", true),
-                {type: "spst.speak", params: {utterance: FISHERMAN_FIRST_UTT}}
+                {
+                  type: "azure.speakSSML",
+                  params: ({}) => ({ssml: getFishermanSSML(FISHERMAN_FIRST_UTT)})
+                },
               ],
               on: {SPEAK_COMPLETE: "Ask"}
             },
@@ -429,9 +445,9 @@ const dmMachine = setup({
               entry: [
                 ({}) => setSpeaking("fisherman", true),
                 {
-                  type: "spst.speak",
-                  params: ({context}) => ({utterance: context.fishermanHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
-                }
+                  type: "azure.speakSSML",
+                  params: ({context}) => ({ssml: getFishermanSSML(context.fishermanHistory?.at(-1)?.content as string ?? "Sorry, there was an error")})
+                },
               ],
               on: {
                 SPEAK_COMPLETE: "Ask"
