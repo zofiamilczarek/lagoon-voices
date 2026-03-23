@@ -1,4 +1,5 @@
 import { assign, createActor, setup, and, or, fromPromise, type StateNodeConfig } from "xstate";
+import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 import type { Settings } from "speechstate";
 import { speechstate } from "speechstate";
 import { createBrowserInspector } from "@statelyai/inspect";
@@ -32,7 +33,7 @@ const settings: Settings = {
   ttsDefaultVoice: "en-US-DavisNeural",
 };
 
-
+const speechConfig = sdk.SpeechConfig.fromSubscription(KEY, "francecentral");
 
 const client = new OpenAI({
   apiKey: "EMPTY",
@@ -48,6 +49,20 @@ async function getLLMAnswer(dialogue: OpenAI.Chat.Completions.ChatCompletionMess
 
   return completion.choices[0].message.content ?? "";
 }
+
+
+// SSML configs
+
+function getGuideSSML(utterance: string) : string {
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+  <voice name="en-US-JennyNeural">
+    <prosody rate="1.05" pitch="+2%">
+      ${utterance}
+    </prosody>
+  </voice>
+</speak>`;
+}
+
 
 
 const dmMachine = setup({
@@ -72,6 +87,22 @@ const dmMachine = setup({
             lastResult: null,
             interpretation: null,
       })),
+    "azure.speakSSML": ({ self }, params: { ssml: string }) => {
+        const synthesizer = new sdk.SpeechSynthesizer(speechConfig);
+        synthesizer.speakSsmlAsync(
+          params.ssml,
+          (result) => {
+            if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+              console.log("SSML successful.");
+              self.send({ type: "SPEAK_COMPLETE" }); // We need to send SPEAK_COMPLETE event for speechstate
+            } else {
+              console.error("SSML failed. Error is:", result.errorDetails);
+            }
+
+            synthesizer.close();
+          }
+        );
+      },
   },
   guards:{
     isYes: ({context}) => context.interpretation?.entities?.find(e => e.resolutions?.[0].resolutionKind === "BooleanResolution")?.resolutions?.[0].value ?? false,
@@ -178,7 +209,15 @@ const dmMachine = setup({
               entry:[ 
                 ({}) => makeHidden("main", false),
                 ({}) => setSpeaking("guide", true),
-                {type: "spst.speak", params: ({context}) => ({utterance: context.guideHistory?.at(-1)?.content as string ?? GUIDE_FIRST_UTT })}],
+                {
+                  type: "azure.speakSSML",
+                  params: ({context}) => {
+                    return {
+                      ssml: getGuideSSML(context.guideHistory?.at(-1)?.content as string ?? GUIDE_FIRST_UTT)
+                    }
+                  }
+                }
+                ],
               on: {
                 SPEAK_COMPLETE: {
                   target: "Ask",
@@ -207,9 +246,9 @@ const dmMachine = setup({
               entry:[ 
                 ({}) => setSpeaking("guide", true),
                 {
-                  type: "spst.speak",
-                  params: ({context}) => ({utterance: context.guideHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
-                },
+                  type: "azure.speakSSML",
+                  params: ({context}) => ({ssml: getGuideSSML(context.guideHistory?.at(-1)?.content as string ?? "Sorry, there was an error")})
+                }
               ],
               on: {
                 SPEAK_COMPLETE: "Ask"
