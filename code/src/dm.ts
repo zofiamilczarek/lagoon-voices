@@ -55,10 +55,24 @@ async function getLLMAnswer(dialogue: OpenAI.Chat.Completions.ChatCompletionMess
 
 function getGuideSSML(utterance: string) : string {
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
-  <voice name="en-US-JennyNeural">
+  <voice name="it-IT-Isabella:DragonHDLatestNeural">
     <prosody rate="1.05" pitch="+2%">
       ${utterance}
     </prosody>
+  </voice>
+</speak>`;
+}
+
+
+function getCrabSSML(utterance: string) : string {
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" 
+         xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
+  <voice name="en-US-Andrew:DragonHDLatestNeural">
+    <mstts:express-as style="depressed" styledegree="1.5">
+      <prosody rate="0.85" pitch="-15%" contour="(0%, -5%) (100%, -20%)">
+        ${utterance}
+      </prosody>
+    </mstts:express-as>
   </voice>
 </speak>`;
 }
@@ -88,21 +102,39 @@ const dmMachine = setup({
             interpretation: null,
       })),
     "azure.speakSSML": ({ self }, params: { ssml: string }) => {
-        const synthesizer = new sdk.SpeechSynthesizer(speechConfig);
-        synthesizer.speakSsmlAsync(
-          params.ssml,
-          (result) => {
-            if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-              console.log("SSML successful.");
-              self.send({ type: "SSML_COMPLETE" }); // We need to send SPEAK_COMPLETE event for speechstate
-            } else {
-              console.error("SSML failed. Error is:", result.errorDetails);
-            }
+      const player = new sdk.SpeakerAudioDestination();
+    
+      // 1. Set up the playback completion listener BEFORE starting
+      player.onAudioEnd = (sender: sdk.IPlayer) => {
+        console.log("Playback finished.");
+        self.send({ type: "SPEAK_COMPLETE" });
+      };
 
-            synthesizer.close();
+      // Associate the player with the config
+      const audioConfig = sdk.AudioConfig.fromSpeakerOutput(player);
+      const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
+
+      synthesizer.speakSsmlAsync(
+        params.ssml,
+        (result) => {
+          if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+            console.log("Synthesis finished, waiting for audio playback to end...");
+          } else {
+            console.error("SSML failed. Error is:", result.errorDetails);
+            // If synthesis fails, we should probably signal completion anyway to avoid a hung state
+            self.send({ type: "SPEAK_COMPLETE" });
           }
-        );
-      },
+
+          // Important: Don't close the synthesizer immediately if you want to reuse it, 
+          // but the player needs to stay alive until onAudioEnd fires.
+          synthesizer.close();
+        },
+        (err) => {
+          console.error("Synthesis error:", err);
+          self.send({ type: "SPEAK_COMPLETE" });
+        }
+      );
+    },
   },
   guards:{
     isYes: ({context}) => context.interpretation?.entities?.find(e => e.resolutions?.[0].resolutionKind === "BooleanResolution")?.resolutions?.[0].value ?? false,
@@ -219,16 +251,8 @@ const dmMachine = setup({
                 }
                 ],
               on: {
-                SSML_COMPLETE: {
-                  target: "ListenSelf"
-                  // on: listenComplete -> ASK
-                  // target: "Ask",
-                }
+                SPEAK_COMPLETE: "Ask"
               },
-            },
-            ListenSelf: {
-              entry: {type: "spst.listen"},
-              on : {LISTEN_COMPLETE: "Ask"}
             },
             Prompt: {
                 invoke: {
@@ -256,8 +280,7 @@ const dmMachine = setup({
                 }
               ],
               on: {
-                SSML_COMPLETE: "ListenSelf"
-                // SSML_COMPLETE: "Ask"
+                SPEAK_COMPLETE: "Ask"
               }
             },
             Ask: {
@@ -304,7 +327,7 @@ const dmMachine = setup({
             FirstUtterance: {
               entry: [
                 ({}) => setSpeaking("crab", true),
-                {type: "spst.speak", params: {utterance: CRAB_FIRST_UTT}},
+                {type: "azure.speakSSML", params: {ssml: getCrabSSML(CRAB_FIRST_UTT)}},
               ],
               on: {SPEAK_COMPLETE: "Ask"}
             },
@@ -329,8 +352,8 @@ const dmMachine = setup({
               entry: [
                 ({}) => setSpeaking("crab", true),
                 {
-                  type: "spst.speak",
-                  params: ({context}) => ({utterance: context.crabHistory?.at(-1)?.content as string ?? "Sorry, there was an error"}),
+                  type: "azure.speakSSML",
+                  params: ({context}) => ({ssml: getCrabSSML(context.crabHistory?.at(-1)?.content as string ?? "Sorry, there was an error")}),
                 },
               ],
               on: {
