@@ -1,4 +1,4 @@
-import { assign, createActor, setup, and, or, fromPromise, type StateNodeConfig } from "xstate";
+import { assign, createActor, setup, fromPromise, type StateNodeConfig } from "xstate";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 import type { Settings } from "speechstate";
 import { speechstate } from "speechstate";
@@ -94,7 +94,7 @@ const dmMachine = setup({
           (result) => {
             if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
               console.log("SSML successful.");
-              self.send({ type: "SPEAK_COMPLETE" }); // We need to send SPEAK_COMPLETE event for speechstate
+              self.send({ type: "SSML_COMPLETE" }); // We need to send SPEAK_COMPLETE event for speechstate
             } else {
               console.error("SSML failed. Error is:", result.errorDetails);
             }
@@ -206,7 +206,7 @@ const dmMachine = setup({
           },
           states: {
             FirstUtterance: {
-              entry:[ 
+              entry: [ 
                 ({}) => makeHidden("main", false),
                 ({}) => setSpeaking("guide", true),
                 {
@@ -219,11 +219,16 @@ const dmMachine = setup({
                 }
                 ],
               on: {
-                SPEAK_COMPLETE: {
-                  target: "Ask",
-                  // actions: ({}) => setSpeaking("guide", false),
+                SSML_COMPLETE: {
+                  target: "ListenSelf"
+                  // on: listenComplete -> ASK
+                  // target: "Ask",
                 }
-              }
+              },
+            },
+            ListenSelf: {
+              entry: {type: "spst.listen"},
+              on : {LISTEN_COMPLETE: "Ask"}
             },
             Prompt: {
                 invoke: {
@@ -251,7 +256,8 @@ const dmMachine = setup({
                 }
               ],
               on: {
-                SPEAK_COMPLETE: "Ask"
+                SSML_COMPLETE: "ListenSelf"
+                // SSML_COMPLETE: "Ask"
               }
             },
             Ask: {
